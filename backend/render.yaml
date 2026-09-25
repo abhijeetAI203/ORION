@@ -1,0 +1,16 @@
+services:
+  - type: web
+    name: orion-license-api
+    runtime: python
+    rootDir: backend
+    buildCommand: pip install -r requirements.txt
+    startCommand: uvicorn app.main:app --host 0.0.0.0 --port $PORT
+    envVars:
+      - key: ORION_ADMIN_USERNAME
+        sync: false
+      - key: ORION_ADMIN_PASSWORD
+        sync: false
+      - key: ORION_ADMIN_TOKEN
+        sync: false
+      - key: ORION_CORS_ORIGINS
+        sync: false

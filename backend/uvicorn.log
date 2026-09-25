@@ -1,0 +1,6 @@
+INFO:     127.0.0.1:58550 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:65485 - "GET /admin HTTP/1.1" 200 OK
+INFO:     127.0.0.1:63863 - "POST /auth/login HTTP/1.1" 200 OK
+INFO:     127.0.0.1:63863 - "GET /licenses HTTP/1.1" 200 OK
+INFO:     127.0.0.1:64088 - "POST /licenses HTTP/1.1" 200 OK
+INFO:     127.0.0.1:64088 - "GET /licenses HTTP/1.1" 200 OK

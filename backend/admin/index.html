@@ -1,0 +1,39 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>ORION Control Panel</title>
+  <style>
+    :root { color-scheme: light; font-family: system-ui, sans-serif; background: #eef3f8; color: #0b1220; }
+    body { max-width: 920px; margin: 0 auto; padding: 32px 20px; }
+    header { display: flex; justify-content: space-between; align-items: baseline; gap: 16px; }
+    h1 { letter-spacing: .14em; margin-bottom: 4px; }
+    .panel { background: white; border: 1px solid #d9e2ed; border-radius: 12px; padding: 20px; margin-top: 20px; box-shadow: 0 8px 24px #0b12200d; }
+    form { display: grid; gap: 12px; max-width: 420px; }
+    input, button { font: inherit; padding: 10px 12px; border-radius: 8px; border: 1px solid #b9c7d8; }
+    button { background: #1769e0; color: white; border: 0; cursor: pointer; }
+    button.secondary { background: #e4edf8; color: #0b1220; }
+    .hidden { display: none; }
+    .key { background: #e9f7f2; padding: 12px; border-radius: 8px; word-break: break-all; font-family: monospace; }
+    table { width: 100%; border-collapse: collapse; margin-top: 16px; }
+    th, td { text-align: left; padding: 10px 8px; border-bottom: 1px solid #e3eaf2; }
+    .muted { color: #607086; }
+  </style>
+</head>
+<body>
+  <header><div><h1>ORION</h1><div class="muted">License control panel</div></div><button id="logout" class="secondary hidden">Log out</button></header>
+  <section id="loginPanel" class="panel"><h2>Admin sign in</h2><form id="loginForm"><input id="username" placeholder="Username" required><input id="password" type="password" placeholder="Password" required><button>Sign in</button></form></section>
+  <section id="licensePanel" class="panel hidden"><h2>Create license</h2><form id="licenseForm"><input id="customer" placeholder="Customer" required><input id="days" type="number" min="1" value="365" placeholder="Duration in days" required><input id="devices" type="number" min="1" value="1" placeholder="Maximum devices" required><button>Generate license</button></form><div id="newKey" class="key hidden"></div><h2>Licenses</h2><button id="refresh" class="secondary">Refresh</button><table><thead><tr><th>Customer</th><th>Status</th><th>Devices</th><th>Expires</th></tr></thead><tbody id="licenses"></tbody></table></section>
+  <script>
+    let token = sessionStorage.getItem('orion_admin_token');
+    const $ = id => document.getElementById(id);
+    function setLoggedIn(value) { $('loginPanel').classList.toggle('hidden', value); $('licensePanel').classList.toggle('hidden', !value); $('logout').classList.toggle('hidden', !value); if (value) refresh(); }
+    async function api(path, options = {}) { const response = await fetch(path, { ...options, headers: { 'Content-Type': 'application/json', ...(token ? { Authorization: `Bearer ${token}` } : {}), ...(options.headers || {}) } }); const data = await response.json(); if (!response.ok) throw new Error(data.detail || 'Request failed'); return data; }
+    $('loginForm').onsubmit = async event => { event.preventDefault(); try { const data = await api('/auth/login', { method: 'POST', body: JSON.stringify({ username: $('username').value, password: $('password').value }) }); token = data.access_token; sessionStorage.setItem('orion_admin_token', token); setLoggedIn(true); } catch (error) { alert(error.message); } };
+    $('licenseForm').onsubmit = async event => { event.preventDefault(); try { const data = await api('/licenses', { method: 'POST', body: JSON.stringify({ customer: $('customer').value, duration_days: Number($('days').value), max_devices: Number($('devices').value) }) }); $('newKey').textContent = `Copy this key now: ${data.license_key}`; $('newKey').classList.remove('hidden'); await refresh(); } catch (error) { alert(error.message); } };
+    async function refresh() { try { const data = await api('/licenses'); $('licenses').innerHTML = data.map(item => `<tr><td>${item.customer}</td><td>${item.status}</td><td>0 / ${item.max_devices}</td><td>${item.expires_at || 'Never'}</td></tr>`).join(''); } catch (error) { if (error.message.includes('authentication')) { token = null; sessionStorage.removeItem('orion_admin_token'); setLoggedIn(false); } else alert(error.message); } }
+    $('refresh').onclick = refresh; $('logout').onclick = () => { token = null; sessionStorage.removeItem('orion_admin_token'); setLoggedIn(false); }; setLoggedIn(Boolean(token));
+  </script>
+</body>
+</html>
